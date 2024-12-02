@@ -1,50 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <com.example.recorrido.WorldView
-        android:id="@+id/worldView"
+    <android.opengl.GLSurfaceView
+        android:id="@+id/glSurfaceView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:gravity="center"
-        android:padding="16dp">
+        android:gravity="center">
 
         <Button
-            android:id="@+id/btnLeft"
+            android:id="@+id/btnMoveLeft"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="←" />
 
         <Button
-            android:id="@+id/btnUp"
+            android:id="@+id/btnMoveForward"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="↑" />
 
         <Button
-            android:id="@+id/btnDown"
+            android:id="@+id/btnMoveBackward"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="↓" />
 
         <Button
-            android:id="@+id/btnRight"
+            android:id="@+id/btnMoveRight"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="→" />
-
-        <Button
-            android:id="@+id/btnReset"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Reset" />
     </LinearLayout>
-</LinearLayout>
+</RelativeLayout>
