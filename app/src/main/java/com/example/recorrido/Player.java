@@ -5,8 +5,9 @@ public class Player {
     private float rotationX = 0f, rotationY = 0f;
 
     public void move(float deltaX, float deltaZ) {
-        posX += deltaX * Math.cos(rotationY);
-        posZ += deltaZ * Math.sin(rotationY);
+        //movimiento
+        posX += deltaX;
+        posZ += deltaZ;
     }
 
     public void rotate(float deltaX, float deltaY) {

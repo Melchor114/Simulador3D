@@ -21,6 +21,8 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     private final float[] viewMatrix = new float[16];
     private final float[] modelMatrix = new float[16];
 
+    private float moveSpeed = 0.2f;  // Velocidad de movimiento ajustable
+
     // Controles de movimiento
     private boolean movingForward = false;
     private boolean movingBackward = false;
@@ -89,20 +91,29 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     }
 
     private void updatePlayerMovement() {
-        float moveSpeed = 0.1f;
+        float deltaX = 0;
+        float deltaZ = 0;
 
+        // Calcular movimiento basado en la rotación actual del jugador
         if (movingForward) {
-            player.move(0, -moveSpeed);
+            deltaZ -= moveSpeed * Math.cos(player.getRotationY());
+            deltaX -= moveSpeed * Math.sin(player.getRotationY());
         }
         if (movingBackward) {
-            player.move(0, moveSpeed);
+            deltaZ += moveSpeed * Math.cos(player.getRotationY());
+            deltaX += moveSpeed * Math.sin(player.getRotationY());
         }
         if (movingLeft) {
-            player.move(-moveSpeed, 0);
+            deltaZ -= moveSpeed * Math.sin(player.getRotationY());
+            deltaX += moveSpeed * Math.cos(player.getRotationY());
         }
         if (movingRight) {
-            player.move(moveSpeed, 0);
+            deltaZ += moveSpeed * Math.sin(player.getRotationY());
+            deltaX -= moveSpeed * Math.cos(player.getRotationY());
         }
+
+        // Mover el jugador
+        player.move(deltaX, deltaZ);
     }
 
     public Player getPlayer() {

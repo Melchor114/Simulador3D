@@ -17,116 +17,67 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
     private GLSurfaceView glSurfaceView;
     private GameRenderer renderer;
-    private float previousX = 0;
-    private float previousY = 0;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        // Configuración específica para OpenGL ES 3
-        glSurfaceView = findViewById(R.id.glSurfaceView);
-
-        // IMPORTANTE: Configurar el contexto de cliente antes de establecer el renderizador
-        glSurfaceView.setEGLContextClientVersion(3);
-
-        // Configurar un renderizador con manejo de errores
-        renderer = new GameRenderer(this);
-
-        // Establecer el modo de renderizado
-        glSurfaceView.setPreserveEGLContextOnPause(true);
-        glSurfaceView.setRenderer(renderer);
-
-        // Renderizar solo cuando hay cambios
-        glSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
     private void setupMovementButtons() {
         Button btnMoveForward = findViewById(R.id.btnMoveForward);
         Button btnMoveBackward = findViewById(R.id.btnMoveBackward);
         Button btnMoveLeft = findViewById(R.id.btnMoveLeft);
         Button btnMoveRight = findViewById(R.id.btnMoveRight);
 
-        btnMoveForward.setOnTouchListener((v, event) -> {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    renderer.setMovingForward(true);
-                    return true;
-                case MotionEvent.ACTION_UP:
-                    renderer.setMovingForward(false);
-                    return true;
-            }
-            return false;
-        });
+        // Usar OnTouchListener para control más preciso
+        btnMoveForward.setOnTouchListener(createMovementTouchListener(
+                () -> renderer.setMovingForward(true),
+                () -> renderer.setMovingForward(false)
+        ));
 
-        btnMoveBackward.setOnTouchListener((v, event) -> {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    renderer.setMovingBackward(true);
-                    return true;
-                case MotionEvent.ACTION_UP:
-                    renderer.setMovingBackward(false);
-                    return true;
-            }
-            return false;
-        });
+        btnMoveBackward.setOnTouchListener(createMovementTouchListener(
+                () -> renderer.setMovingBackward(true),
+                () -> renderer.setMovingBackward(false)
+        ));
 
-        btnMoveLeft.setOnTouchListener((v, event) -> {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    renderer.setMovingLeft(true);
-                    return true;
-                case MotionEvent.ACTION_UP:
-                    renderer.setMovingLeft(false);
-                    return true;
-            }
-            return false;
-        });
+        btnMoveLeft.setOnTouchListener(createMovementTouchListener(
+                () -> renderer.setMovingLeft(true),
+                () -> renderer.setMovingLeft(false)
+        ));
 
-        btnMoveRight.setOnTouchListener((v, event) -> {
+        btnMoveRight.setOnTouchListener(createMovementTouchListener(
+                () -> renderer.setMovingRight(true),
+                () -> renderer.setMovingRight(false)
+        ));
+    }
+
+    // Método para crear un listener de movimiento reutilizable
+    private View.OnTouchListener createMovementTouchListener(
+            Runnable onPress, Runnable onRelease) {
+        return (v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    renderer.setMovingRight(true);
+                    onPress.run();
+                    v.performClick();
                     return true;
                 case MotionEvent.ACTION_UP:
-                    renderer.setMovingRight(false);
+                case MotionEvent.ACTION_CANCEL:
+                    onRelease.run();
                     return true;
             }
             return false;
-        });
+        };
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        float x = event.getX();
-        float y = event.getY();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_MOVE:
-                float deltaX = x - previousX;
-                float deltaY = y - previousY;
+        glSurfaceView = findViewById(R.id.glSurfaceView);
+        glSurfaceView.setEGLContextClientVersion(3);
+        renderer = new GameRenderer(this);
+        glSurfaceView.setRenderer(renderer);
 
-                // Rotar la vista con menor sensibilidad
-                renderer.getPlayer().rotate(-deltaX * 0.005f, -deltaY * 0.005f);
-                break;
-        }
+        // Configurar renderizado continuo para actualizaciones de movimiento
+        glSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
-        previousX = x;
-        previousY = y;
-        return true;
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        glSurfaceView.onPause();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        glSurfaceView.onResume();
+        // Configurar botones de movimiento
+        setupMovementButtons();
     }
 }
