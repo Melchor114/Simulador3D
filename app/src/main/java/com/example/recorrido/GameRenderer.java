@@ -5,6 +5,7 @@ import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,10 +52,13 @@ public class GameRenderer implements GLSurfaceView.Renderer {
             Log.d(TAG, "OpenGL Renderer: " + GLES30.glGetString(GLES30.GL_RENDERER));
 
             // Configuraciones básicas
+
+            // Configuración inicial
             GLES30.glClearColor(0.5f, 0.8f, 1.0f, 1.0f);
             GLES30.glEnable(GLES30.GL_DEPTH_TEST);
+            GLES30.glDepthFunc(GLES30.GL_LESS);
 
-            // Inicializar recursos
+            // Inicialización
             terrain = new Terrain();
             player = new Player();
 
@@ -73,27 +77,71 @@ public class GameRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        // Actualizar posición del jugador
         updatePlayerMovement();
 
+        // Limpiar buffers
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT | GLES30.GL_DEPTH_BUFFER_BIT);
 
+        // Configuraciones de OpenGL
+        GLES30.glEnable(GLES30.GL_DEPTH_TEST);
+        GLES30.glDepthFunc(GLES30.GL_LESS);
+        GLES30.glClearDepthf(1.0f);
+
+        // Matriz de vista
         Matrix.setLookAtM(viewMatrix, 0,
                 player.getPosX(), player.getPosY() + 1.5f, player.getPosZ(),
                 player.getPosX() + (float)Math.sin(player.getRotationY()),
                 player.getPosY() + 1.5f,
                 player.getPosZ() - (float)Math.cos(player.getRotationY()),
-                0f, 1f, 0f
-        );
+                0f, 1f, 0f);
 
+        // Dibujar terreno
+        terrain.draw(projectionMatrix, viewMatrix);
+
+        // Dibujar objetos
+        synchronized(gameObjects) {
+            for (GameObject obj : gameObjects) {
+                obj.draw(projectionMatrix, viewMatrix);
+            }
+        }
+    }
+/*    public void onDrawFrame(GL10 gl) {
+        // Actualizar posición del jugador
+        updatePlayerMovement();
+
+        // Limpiar buffers
+        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT | GLES30.GL_DEPTH_BUFFER_BIT);
+        GLES30.glEnable(GLES30.GL_DEPTH_TEST);
+
+        // Configurar matriz de vista
+        Matrix.setLookAtM(viewMatrix, 0,
+                player.getPosX(), player.getPosY() + 1.5f, player.getPosZ(),
+                player.getPosX() + (float)Math.sin(player.getRotationY()),
+                player.getPosY() + 1.5f,
+                player.getPosZ() - (float)Math.cos(player.getRotationY()),
+                0f, 1f, 0f);
+
+        // Limpiar bindings de buffer antes de dibujar el terreno
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
+        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        // Dibujar el terreno
         terrain.draw(projectionMatrix, viewMatrix);
 
         // Dibujar objetos de juego
-        for (GameObject obj : gameObjects) {
-            obj.draw(projectionMatrix, viewMatrix);
+        synchronized(gameObjects) {
+            for (GameObject obj : gameObjects) {
+                // Limpiar bindings antes de cada objeto
+                GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
+                GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+                obj.draw(projectionMatrix, viewMatrix);
+            }
         }
-    }
 
+        // Limpiar bindings al final
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
+        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }*/
     // Método existente de colocación aleatoria si aún lo quieres
     public void placeRandomObject() {
         float randomX = random.nextFloat() * 20;
@@ -107,11 +155,22 @@ public class GameRenderer implements GLSurfaceView.Renderer {
 
     // Método para agregar un objeto en una posición específica
     public void addGameObject(GameObject object) {
-        gameObjects.add(object);
-        Log.d("GameRenderer", "Objeto colocado en: X=" + object.getPosX() +
-                ", Y=" + object.getPosY() + ", Z=" + object.getPosZ());
+        synchronized(gameObjects) {
+            gameObjects.add(object);
+            Log.d("GameRenderer", String.format(
+                    "Objeto agregado en: X=%.2f, Y=%.2f, Z=%.2f - Total objetos: %d",
+                    object.getPosX(), object.getPosY(), object.getPosZ(), gameObjects.size()
+            ));
+        }
+        // Forzar un renderizado inmediato
+        if (context instanceof MainActivity) {
+            ((MainActivity)context).runOnUiThread(() -> {
+                Toast.makeText(context,
+                        "Objeto colocado - Total: " + gameObjects.size(),
+                        Toast.LENGTH_SHORT).show();
+            });
+        }
     }
-
     private void updatePlayerMovement() {
         float deltaX = 0;
         float deltaZ = 0;
@@ -137,7 +196,23 @@ public class GameRenderer implements GLSurfaceView.Renderer {
         // Mover el jugador
         player.move(deltaX, deltaZ);
     }
+    public float[] screenToWorld(float screenX, float screenY) {
+        float playerX = player.getPosX();
+        float playerZ = player.getPosZ();
+        float playerRotY = player.getRotationY();
 
+        // Colocar objeto frente al jugador
+        float distance = 3.0f;
+        float objectX = playerX + (float)(Math.sin(playerRotY) * distance);
+        float objectZ = playerZ - (float)(Math.cos(playerRotY) * distance);
+
+        // Mantener dentro de los límites del terreno
+        objectX = Math.max(1.0f, Math.min(objectX, 19.0f));
+        objectZ = Math.max(1.0f, Math.min(objectZ, 19.0f));
+
+        // Elevar el objeto para que sea visible sobre el terreno
+        return new float[]{objectX, 1.0f, objectZ};
+    }
     public Player getPlayer() {
         return player;
     }

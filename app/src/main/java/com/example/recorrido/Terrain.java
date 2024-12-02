@@ -10,26 +10,49 @@ import java.nio.FloatBuffer;
 
 public class Terrain {
     private FloatBuffer vertexBuffer;
+    private int mProgram;
     private int[] vbo = new int[1];
     private static final int COORDS_PER_VERTEX = 3;
+    private final int vertexCount;
+    private final String vertexShaderCode =
+            "uniform mat4 uMVPMatrix;" +
+                    "attribute vec4 vPosition;" +
+                    "void main() {" +
+                    "  gl_Position = uMVPMatrix * vPosition;" +
+                    "}";
 
+    private final String fragmentShaderCode =
+            "precision mediump float;" +
+                    "void main() {" +
+                    "  gl_FragColor = vec4(0.2, 0.7, 0.3, 1.0);" +
+                    "}";
     public Terrain() {
         float[] terrainVertices = generateTerrainVertices();
+        vertexCount = terrainVertices.length / COORDS_PER_VERTEX;
 
+        // Inicializar buffer de vértices
         vertexBuffer = ByteBuffer.allocateDirect(terrainVertices.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         vertexBuffer.put(terrainVertices).position(0);
 
+        // Crear programa de shader
+        int vertexShader = loadShader(GLES30.GL_VERTEX_SHADER, vertexShaderCode);
+        int fragmentShader = loadShader(GLES30.GL_FRAGMENT_SHADER, fragmentShaderCode);
+        mProgram = GLES30.glCreateProgram();
+        GLES30.glAttachShader(mProgram, vertexShader);
+        GLES30.glAttachShader(mProgram, fragmentShader);
+        GLES30.glLinkProgram(mProgram);
+
+        // Generar VBO
         GLES30.glGenBuffers(1, vbo, 0);
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo[0]);
         GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER,
                 vertexBuffer.capacity() * 4,
                 vertexBuffer,
-                GLES30.GL_STATIC_DRAW
-        );
+                GLES30.GL_STATIC_DRAW);
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
     }
-
     private float[] generateTerrainVertices() {
         int width = 20;
         int depth = 20;
@@ -69,51 +92,27 @@ public class Terrain {
     }
 
     public void draw(float[] projectionMatrix, float[] viewMatrix) {
-        // Código de shader simplificado
-        String vertexShaderCode =
-                "uniform mat4 uMVPMatrix;" +
-                        "attribute vec4 vPosition;" +
-                        "void main() {" +
-                        "  gl_Position = uMVPMatrix * vPosition;" +
-                        "}";
-
-        String fragmentShaderCode =
-                "precision mediump float;" +
-                        "void main() {" +
-                        "  gl_FragColor = vec4(0.2, 0.7, 0.3, 1.0);" +
-                        "}";
-
-        int vertexShader = loadShader(GLES30.GL_VERTEX_SHADER, vertexShaderCode);
-        checkGlError("Vertex Shader Compilation");  // Añade esta línea
-
-        int fragmentShader = loadShader(GLES30.GL_FRAGMENT_SHADER, fragmentShaderCode);
-        checkGlError("Fragment Shader Compilation");  // Añade esta línea
-
-        int mProgram = GLES30.glCreateProgram();
-        GLES30.glAttachShader(mProgram, vertexShader);
-        GLES30.glAttachShader(mProgram, fragmentShader);
-        GLES30.glLinkProgram(mProgram);
-        checkGlError("Program Linking");  // Añade esta línea
-
         GLES30.glUseProgram(mProgram);
-        checkGlError("Use Program");  // Añade esta línea
 
         int positionHandle = GLES30.glGetAttribLocation(mProgram, "vPosition");
-        int matrixHandle = GLES30.glGetUniformLocation(mProgram, "uMVPMatrix");
+        int mvpMatrixHandle = GLES30.glGetUniformLocation(mProgram, "uMVPMatrix");
 
         float[] mvpMatrix = new float[16];
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
-        GLES30.glUniformMatrix4fv(matrixHandle, 1, false, mvpMatrix, 0);
+        GLES30.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0);
 
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo[0]);
         GLES30.glEnableVertexAttribArray(positionHandle);
         GLES30.glVertexAttribPointer(positionHandle, COORDS_PER_VERTEX,
                 GLES30.GL_FLOAT, false,
-                COORDS_PER_VERTEX * 4, 0
-        );
+                COORDS_PER_VERTEX * 4, 0);
 
-        GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, generateTerrainVertices().length / COORDS_PER_VERTEX);
+        GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, vertexCount);
+
         GLES30.glDisableVertexAttribArray(positionHandle);
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
+        GLES30.glUseProgram(0);
     }
 
     private int loadShader(int type, String shaderCode) {
