@@ -6,6 +6,10 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -28,6 +32,9 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     private boolean movingBackward = false;
     private boolean movingLeft = false;
     private boolean movingRight = false;
+
+    private List<GameObject> gameObjects = new ArrayList<>();
+    private Random random = new Random();
 
     public GameRenderer(Context context) {
         this.context = context;
@@ -55,14 +62,6 @@ public class GameRenderer implements GLSurfaceView.Renderer {
             Log.e(TAG, "Error in onSurfaceCreated", e);
         }
     }
-    // Método para verificar errores de OpenGL
-    private void checkGlError(String glOperation) {
-        int error;
-        while ((error = GLES30.glGetError()) != GLES30.GL_NO_ERROR) {
-            Log.e(TAG, glOperation + ": glError " + error);
-            throw new RuntimeException(glOperation + ": glError " + error);
-        }
-    }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
@@ -88,6 +87,29 @@ public class GameRenderer implements GLSurfaceView.Renderer {
         );
 
         terrain.draw(projectionMatrix, viewMatrix);
+
+        // Dibujar objetos de juego
+        for (GameObject obj : gameObjects) {
+            obj.draw(projectionMatrix, viewMatrix);
+        }
+    }
+
+    // Método existente de colocación aleatoria si aún lo quieres
+    public void placeRandomObject() {
+        float randomX = random.nextFloat() * 20;
+        float randomZ = random.nextFloat() * 20;
+
+        GameObject newObject = new GameObject(randomX, 1f, randomZ);
+        gameObjects.add(newObject);
+
+        Log.d("GameRenderer", "Objeto aleatorio colocado en: X=" + randomX + ", Z=" + randomZ);
+    }
+
+    // Método para agregar un objeto en una posición específica
+    public void addGameObject(GameObject object) {
+        gameObjects.add(object);
+        Log.d("GameRenderer", "Objeto colocado en: X=" + object.getPosX() +
+                ", Y=" + object.getPosY() + ", Z=" + object.getPosZ());
     }
 
     private void updatePlayerMovement() {

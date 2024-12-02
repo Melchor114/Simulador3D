@@ -38,5 +38,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="→" />
+
+        <Button
+            android:id="@+id/btnPlaceObject"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="X" />
     </LinearLayout>
 </RelativeLayout>
