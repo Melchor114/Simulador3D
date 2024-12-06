@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Recorrido"
+rootProject.name = "MODOAUTOMATICO"
 include(":app")
+ 
